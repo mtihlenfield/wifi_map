@@ -1,4 +1,5 @@
 import multiprocessing
+import os
 
 import scapy.all as sc
 import scapy.layers.dot11 as dot11
@@ -35,8 +36,30 @@ def read(fname, config=DEFAULT_CONFIG):
 
 
 def spawn_workers(packet_queue):
-    pass
+    """
+    Spawns subprocesses to grab packets from the packet queue
+    """
+    num_workers = min(MAX_WORKERS, os.cpu_count())
+    procs = []
+
+    for i in range(num_workers):
+        proc = multiprocessing.Process(
+            target=process_packets, args=(packet_queue,)
+        )
+        proc.start()
+        procs.append(proc)
+
+    return procs
 
 
 def process_packets(packet_queue):
-    pass
+    """
+    Reads packets of the packet_queue, writes new info to the database,
+    and places any updates on the update queue for the server to pull from
+    """
+    while True:
+        packet_bytes = packet_queue.get()
+        dot11_packet = dot11.Dot11(packet_bytes)
+
+
+
