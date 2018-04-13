@@ -1,0 +1,8 @@
+DEFAULT_DB_PORT = 3306  # MySQL
+DEFAULT_MQ_PORT = 5672  # rabbit mq
+DEFAULT_SERVER_PORT = 6363
+DEFAULT_CONFIG = {
+    "portno": DEFAULT_SERVER_PORT,
+    "mq_port": DEFAULT_MQ_PORT,
+    "db_port": DEFAULT_DB_PORT
+}
