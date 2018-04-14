@@ -101,12 +101,12 @@ def main():
 
     db_init()
 
-    # if args.read:
-    #     print("Reading pcap")
-    #     read(args.read, config)
-    #     print("Completed processing pcap.")
-    # else:
-    #     sniff(args.interface, config)
+    if args.read:
+        print("Reading pcap")
+        read(args.read, config)
+        print("Completed processing pcap.")
+    else:
+        sniff(args.interface, config)
 
 
 def db_init():

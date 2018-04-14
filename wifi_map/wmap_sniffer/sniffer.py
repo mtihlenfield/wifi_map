@@ -5,6 +5,7 @@ import scapy.all as sc
 import scapy.layers.dot11 as dot11
 
 from wmap_common.constants import DEFAULT_CONFIG
+from . import handlers
 
 # This is somewhat arbitrary...
 MAX_WORKERS = 6
@@ -39,6 +40,7 @@ def spawn_workers(packet_queue):
     """
     Spawns subprocesses to grab packets from the packet queue
     """
+    # TODO implement a method of gracefully stopping the workers
     num_workers = min(MAX_WORKERS, os.cpu_count())
     procs = []
 
@@ -59,7 +61,13 @@ def process_packets(packet_queue):
     """
     while True:
         packet_bytes = packet_queue.get()
-        dot11_packet = dot11.Dot11(packet_bytes)
+        packet = dot11.Dot11(packet_bytes)
+        print("got packet")
+        handler = handlers.get_handler(packet.type, packet.subtype)
 
+        changes = handler(packet)
 
+        # for change in changes:
+        #     change.obj.save()
 
+            # enqueue_change(change)
