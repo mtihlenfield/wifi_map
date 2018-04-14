@@ -4,7 +4,7 @@ import os
 import scapy.all as sc
 import scapy.layers.dot11 as dot11
 
-from wmap_common import DEFAULT_CONFIG
+from wmap_common.constants import DEFAULT_CONFIG
 
 # This is somewhat arbitrary...
 MAX_WORKERS = 6

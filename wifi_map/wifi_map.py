@@ -3,8 +3,9 @@ import argparse
 import os
 
 from wmap_sniffer import sniff, read
-from wmap_common import DEFAULT_DB_PORT, \
-    DEFAULT_SERVER_PORT, DEFAULT_MQ_PORT
+import wmap_common.constants as constants
+import wmap_common.db_utils as db_utils
+import wmap_common.models as models
 
 
 def filename(fname):
@@ -58,27 +59,27 @@ def parse_args():
     group = parser.add_mutually_exclusive_group(required=True)
 
     group.add_argument(
-       "-r", "--read", type=filename, metavar="FNAME",
-       help="Pcap file to read from."
+        "-r", "--read", type=filename, metavar="FNAME",
+        help="Pcap file to read from."
     )
 
     group.add_argument(
-       "-i", "--interface", type=interface,
-       help="Network interface to listen on"
+        "-i", "--interface", type=interface,
+        help="Network interface to listen on"
     )
 
     parser.add_argument(
-        "-p", "--port", type=port, default=DEFAULT_SERVER_PORT,
+        "-p", "--port", type=port, default=constants.DEFAULT_SERVER_PORT,
         help="TCP port to run the web client on"
     )
 
     parser.add_argument(
-        "--db-port", type=port, default=DEFAULT_DB_PORT,
+        "--db-port", type=port, default=constants.DEFAULT_DB_PORT,
         help="TCP port that MySQL is running on."
     )
 
     parser.add_argument(
-        "--mq-port", type=port, default=DEFAULT_MQ_PORT,
+        "--mq-port", type=port, default=constants.DEFAULT_MQ_PORT,
         help="TCP port that RabbitMQ is running on."
     )
 
@@ -98,12 +99,43 @@ def main():
         "db_port": args.db_port
     }
 
-    if args.read:
-        print("Reading pcap")
-        read(args.read, config)
-        print("Completed processing pcap.")
+    db_init()
+
+    # if args.read:
+    #     print("Reading pcap")
+    #     read(args.read, config)
+    #     print("Completed processing pcap.")
+    # else:
+    #     sniff(args.interface, config)
+
+
+def db_init():
+    """
+    Creates the database if it doesn't exist. Clears if it does.
+    """
+    if not os.path.isdir(constants.DB_DIR):
+        os.mkdir(constants.DB_DIR)
+        create_db()
+    elif not os.path.exists(constants.DB_FILE):
+        create_db()
     else:
-        sniff(args.interface, config)
+        for model in [models.Station, models.Network, models.Connection]:
+            model.delete().where(True)
+
+
+def create_db():
+    """
+    Creates the database and the tables.
+    """
+    db = db_utils.get_db()
+
+    with db:
+        db.create_tables([
+            models.Station,
+            models.Network,
+            models.Connection
+        ])
+
 
 
 if __name__ == "__main__":

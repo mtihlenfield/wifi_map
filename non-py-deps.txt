@@ -1,2 +1,2 @@
-libmysqlclient
 rabbitmq
+sqlite3
