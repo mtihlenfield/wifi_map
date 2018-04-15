@@ -1,15 +1,14 @@
 import multiprocessing
 import json
+import time
 import os
+import queue
 
 import scapy.all as sc
 import scapy.layers.dot11 as dot11
 
 from wmap_common.constants import DEFAULT_CONFIG
 from . import handlers
-
-# This is somewhat arbitrary...
-MAX_WORKERS = 6
 
 
 def sniff(interface, config=DEFAULT_CONFIG):
@@ -25,8 +24,12 @@ def read(fname, config=DEFAULT_CONFIG):
     Reads 802.11 packets from a pcap file and stores/queues
     relevant information.
     """
+    # TODO probably need to limit the # number of packets
+    # written to the queue per second. We're writing
+    # wayyyyyyy faster than we're reading.
     packet_queue = multiprocessing.Queue()
-    spawn_workers(packet_queue)
+    completion_event = multiprocessing.Event()
+    workers = spawn_workers(packet_queue, completion_event)
 
     print("Reading")
     packets = sc.rdpcap(fname)
@@ -36,27 +39,40 @@ def read(fname, config=DEFAULT_CONFIG):
             # We don't need anything below the dot11 layer
             dot11_layer = packet.getlayer(dot11.Dot11)
             layer_bytes = sc.raw(dot11_layer)
-            # TODO add timestamp to packet so updates stay in order
-            packet_queue.put(layer_bytes, block=False)
+            time_recieved = time.time()
+
+            message = {
+                "pkt": layer_bytes,
+                "rcvd": time_recieved
+            }
+
+            packet_queue.put(message, block=False)
+
+    completion_event.set()
+
+    for worker in workers:
+        worker.join()
 
 
-def spawn_workers(packet_queue):
+def spawn_workers(packet_queue, completion_event):
     """
     Spawns subprocesses to grab packets from the packet queue
     """
-    # TODO implement a method of gracefully stopping the workers
-    num_workers = min(MAX_WORKERS, os.cpu_count())
+    num_workers = os.cpu_count()
     procs = []
 
     # This lock must be acquired before executing database writes or database
     # reads followed by dependent database writes.
-    # Having a single lock to access all tables for reads and writes is hamfisted
-    # but I don't have time for a better approach
-    db_lock = multiprocessing.Lock()
+    # TODO implement this more efficiently. This is rather hamfisted.
+    locks = {
+        "station": multiprocessing.Lock(),
+        "connection": multiprocessing.Lock(),
+        "network": multiprocessing.Lock()
+    }
 
     for i in range(num_workers):
         proc = multiprocessing.Process(
-            target=process_packets, args=(packet_queue, db_lock)
+            target=process_packets, args=(packet_queue, locks, completion_event)
         )
         proc.start()
         procs.append(proc)
@@ -64,19 +80,21 @@ def spawn_workers(packet_queue):
     return procs
 
 
-def process_packets(packet_queue, db_lock):
+def process_packets(packet_queue, locks, completion_event):
     """
     Reads packets of the packet_queue, writes new info to the database,
     and places any updates on the update queue for the server to pull from
     """
     while True:
-        packet_bytes = packet_queue.get()
-        packet = dot11.Dot11(packet_bytes)
-        handler = handlers.get_handler(packet.type, packet.subtype)
+        try:
+            print("Queue size: {}".format(packet_queue.qsize()))
+            message = packet_queue.get(block=False)
+            packet = dot11.Dot11(message["pkt"])
+            time_recieved = message["rcvd"]
+            handler = handlers.get_handler(packet.type, packet.subtype)
 
-        changes = handler(packet, db_lock)
+            changes = handler(packet, time_recieved, locks)
 
-        if packet.type == 2:
             update = {}
             for change in changes:
                 class_name = change.objtype.class_name
@@ -86,5 +104,10 @@ def process_packets(packet_queue, db_lock):
                 update[class_name].append(change.to_dict())
 
             serialized_update = json.dumps(update)
+        except queue.Empty:
+            if completion_event.is_set():
+                return
+            else:
+                time.sleep(1)
 
         # TODO enqueue update

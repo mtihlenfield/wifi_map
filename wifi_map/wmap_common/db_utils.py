@@ -12,7 +12,8 @@ def get_db():
     global db
 
     if not db:
-        db = peewee.SqliteDatabase(DB_FILE)
+        db = peewee.SqliteDatabase(DB_FILE, pragmas=(('foreign_keys', 'on'),))
+        # db = peewee.SqliteDatabase(DB_FILE)
 
     return db
 

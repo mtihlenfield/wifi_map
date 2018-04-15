@@ -42,14 +42,20 @@ class Connection(peewee.Model):
     An authentication/association relationship between two devices
     """
     class_name = "connection"
-    station1 = peewee.ForeignKeyField(Station)
-    station2 = peewee.ForeignKeyField(Station)
+    conn_id = peewee.AutoField(primary_key=True, null=False, unique=True)
+    # station1 = peewee.ForeignKeyField(Station)
+    station1 = peewee.TextField(null=False)
+    # station2 = peewee.ForeignKeyField(Station)
+    station2 = peewee.TextField(null=False)
     connected = peewee.BooleanField()
     last_update = peewee.DateTimeField(default=time.time())
 
     class Meta:
-        primary_key = peewee.CompositeKey("station1", "station2")
+        # primary_key = peewee.CompositeKey("station1", "station2")
         database = get_db()
+        constraints = [
+            peewee.SQL("UNIQUE (station1, station2)")
+        ]
 
 
 def to_dict(model):
