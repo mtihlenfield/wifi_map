@@ -32,27 +32,28 @@ def read(fname, config=DEFAULT_CONFIG):
     completion_event = multiprocessing.Event()
     workers = spawn_workers(packet_queue, update_queue, completion_event)
 
-    print("Reading")
-    packets = sc.rdpcap(fname)
-    print("Placing on queue")
-    for packet in packets:
-        if packet.haslayer(dot11.Dot11):
-            # We don't need anything below the dot11 layer
-            dot11_layer = packet.getlayer(dot11.Dot11)
-            layer_bytes = sc.raw(dot11_layer)
-            time_recieved = time.time()
+    try:
+        print("Reading...")
+        packets = sc.rdpcap(fname)
+        print("Placing on queue...")
+        for packet in packets:
+            if packet.haslayer(dot11.Dot11):
+                # We don't need anything below the dot11 layer
+                dot11_layer = packet.getlayer(dot11.Dot11)
+                layer_bytes = sc.raw(dot11_layer)
+                time_recieved = time.time()
 
-            message = {
-                "pkt": layer_bytes,
-                "rcvd": time_recieved
-            }
+                message = {
+                    "pkt": layer_bytes,
+                    "rcvd": time_recieved
+                }
 
-            packet_queue.put(message, block=False)
-
-    completion_event.set()
-
-    for worker in workers:
-        worker.join()
+                packet_queue.put(message, block=False)
+        print("Processing...")
+        completion_event.set()
+    except KeyboardInterrupt:
+        print("Closing...")
+        completion_event.set()
 
 
 def spawn_workers(packet_queue, update_queue, completion_event):
@@ -88,7 +89,6 @@ def process_packets(packet_queue, update_queue, locks, completion_event):
     """
     while True:
         try:
-            print("Queue size: {}".format(packet_queue.qsize()))
             message = packet_queue.get(block=False)
             packet = dot11.Dot11(message["pkt"])
             time_recieved = message["rcvd"]

@@ -1,8 +1,10 @@
 #!/usr/bin/env python
+import multiprocessing
 import argparse
 import os
 
 from wmap_sniffer import sniff, read
+from wmap_server import start_server
 import wmap_common.constants as constants
 import wmap_common.db_utils as db_utils
 import wmap_common.models as models
@@ -95,11 +97,13 @@ def main():
 
     config = {
         "portno": args.port,
-        "mq_port": args.mq_port,
-        "db_port": args.db_port
+        "mq_port": args.mq_port
     }
 
     db_init()
+
+    server_proc = multiprocessing.Process(target=start_server, args=(config,))
+    server_proc.start()
 
     if args.read:
         read(args.read, config)

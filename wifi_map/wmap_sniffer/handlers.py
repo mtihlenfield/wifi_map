@@ -1,6 +1,3 @@
-from pprint import pprint
-import itertools
-import time
 import copy
 
 from wmap_common import constants
@@ -141,22 +138,18 @@ def default_data_handler(pkt, time_recieved, locks):
 
     # Determining what connections I should have:
     if addresses[constants.ADDRESS_BSSID]:  # normal AP to client connection
-        print("normal")
         for addr in [addresses[constants.ADDRESS_SRC], addresses[constants.ADDRESS_DST]]:
             # connection.station1 and connection.station2 are sorted alphabetically
             sorted_addrs = sorted((addr, addresses[constants.ADDRESS_BSSID]))
             poss_con_pairs.append(sorted_addrs)
     elif not addresses[constants.ADDRESS_BSSID] and not addresses[constants.ADDRESS_TRNSMT]:  # ad hoc connection
-        print("ad hoc")
         sorted_addrs = sorted((addresses[constants.ADDRESS_DST], addresses[constants.ADDRESS_SRC]))
         poss_con_pairs.append(sorted_addrs)
     elif addresses[constants.ADDRESS_TRNSMT]:  # WDS connection
-        print("wds")
         # if one of the devices is an access point then create connections to it.
         # TODO implement this
         pass
 
-    # pprint(poss_con_pairs)
     for pair in poss_con_pairs:
         poss_cons.append(Connection(
             station1=pair[0],
@@ -204,7 +197,6 @@ def default_data_handler(pkt, time_recieved, locks):
         with db_utils.get_db().atomic():
             if len(new_cons) > 0:
                 con_dicts = [model_to_dict(con) for con in new_cons]
-                pprint(con_dicts)
                 Connection.insert_many(con_dicts).execute()
 
             # Every connection needs at least its last_update param reset but it
