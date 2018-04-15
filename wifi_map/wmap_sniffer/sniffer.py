@@ -1,5 +1,4 @@
 import multiprocessing
-import json
 import time
 import os
 import queue
@@ -8,6 +7,7 @@ import scapy.all as sc
 import scapy.layers.dot11 as dot11
 
 from wmap_common.constants import DEFAULT_CONFIG
+from wmap_common.update_queue import UpdateQueue
 from . import handlers
 
 
@@ -28,8 +28,9 @@ def read(fname, config=DEFAULT_CONFIG):
     # written to the queue per second. We're writing
     # wayyyyyyy faster than we're reading.
     packet_queue = multiprocessing.Queue()
+    update_queue = UpdateQueue.get_connection(config["mq_port"])
     completion_event = multiprocessing.Event()
-    workers = spawn_workers(packet_queue, completion_event)
+    workers = spawn_workers(packet_queue, update_queue, completion_event)
 
     print("Reading")
     packets = sc.rdpcap(fname)
@@ -54,7 +55,7 @@ def read(fname, config=DEFAULT_CONFIG):
         worker.join()
 
 
-def spawn_workers(packet_queue, completion_event):
+def spawn_workers(packet_queue, update_queue, completion_event):
     """
     Spawns subprocesses to grab packets from the packet queue
     """
@@ -72,7 +73,7 @@ def spawn_workers(packet_queue, completion_event):
 
     for i in range(num_workers):
         proc = multiprocessing.Process(
-            target=process_packets, args=(packet_queue, locks, completion_event)
+            target=process_packets, args=(packet_queue, update_queue, locks, completion_event)
         )
         proc.start()
         procs.append(proc)
@@ -80,7 +81,7 @@ def spawn_workers(packet_queue, completion_event):
     return procs
 
 
-def process_packets(packet_queue, locks, completion_event):
+def process_packets(packet_queue, update_queue, locks, completion_event):
     """
     Reads packets of the packet_queue, writes new info to the database,
     and places any updates on the update queue for the server to pull from
@@ -95,15 +96,17 @@ def process_packets(packet_queue, locks, completion_event):
 
             changes = handler(packet, time_recieved, locks)
 
-            update = {}
-            for change in changes:
-                class_name = change.objtype.class_name
-                if class_name not in update:
-                    update[class_name] = []
+            if len(changes) > 0:
+                update = {}
+                for change in changes:
+                    class_name = change.objtype.class_name
+                    if class_name not in update:
+                        update[class_name] = []
 
-                update[class_name].append(change.to_dict())
+                    update[class_name].append(change.to_dict())
 
-            serialized_update = json.dumps(update)
+                update_queue.put(update)
+
         except queue.Empty:
             if completion_event.is_set():
                 return
