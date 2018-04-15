@@ -88,7 +88,7 @@ def parse_args():
 
 def main():
     # TODO verify rabbitmq is running
-    # TODO initialize database
+    # TODO initialize queues
     # TODO spin up server process
 
     args = parse_args()
@@ -102,9 +102,7 @@ def main():
     db_init()
 
     if args.read:
-        print("Reading pcap")
         read(args.read, config)
-        print("Completed processing pcap.")
     else:
         sniff(args.interface, config)
 
@@ -119,8 +117,10 @@ def db_init():
     elif not os.path.exists(constants.DB_FILE):
         create_db()
     else:
+        # Clearing the database insead of just deleting is so we don't have
+        # to recreate the IEEE mac address table
         for model in [models.Station, models.Network, models.Connection]:
-            model.delete().where(True)
+            model.delete().where(True).execute()
 
 
 def create_db():
@@ -135,7 +135,6 @@ def create_db():
             models.Network,
             models.Connection
         ])
-
 
 
 if __name__ == "__main__":

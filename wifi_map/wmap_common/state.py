@@ -1,24 +1,26 @@
 import copy
 import json
 
+from . import models
+
 ACTION_CREATE = "create"
 ACTION_UPDATE = "update"
 
 
-def get_device_state(device_macs):
-    """
-    Returns the models of the devices as well as any connections
-    related to the devices
-    """
-    pass
-
-
-class State():
-    """
-    Represents the state of a collection of devices and their connections
-    (i.e. not the state of all the networks, devices, and connections as whole
-    """
-    pass
+# def get_devices_state(addr1, addr2, addr3, addr4=None):
+#     """
+#     Returns the models of the devices as well as any connections
+#     related to the devices
+#     """
+#     addrs = [addr1, addr2, addr3]
+#     if addr4:
+#         addrs.append(addr4)
+#
+#     stations = (Station.select().where(Station.mac in addrs))
+#     connections = (Connections.select().where(
+#         (Connection.addr1 in addrs) or
+#         (Connection.addr2 in addrs)
+#     ))
 
 
 class StateChange():
@@ -37,14 +39,14 @@ class StateChange():
         # updates=['connected']
         self.updates = updates
 
-    def to_json(self):
+    def to_dict(self):
         """
-        Returns the state change object in json format
+        Returns the state change object as a dict
         """
-        dict_copy = copy.deepcopy(self.__dict__)
+        dict_copy = {
+            "action": self.action,
+            "objtype": self.objtype.class_name,
+            "obj": models.to_dict(self.obj)
+        }
 
-        if self.action == ACTION_CREATE:
-            del dict_copy["updates"]
-
-        return json.dumps(dict_copy)
-
+        return dict_copy
