@@ -111,7 +111,8 @@ def default_data_handler(pkt, time_recieved, locks):
                         state_changes.append(state.StateChange(
                             state.ACTION_UPDATE,
                             Station,
-                            sta
+                            sta,
+                            updates=["is_ap"],
                         ))
                     break
 
