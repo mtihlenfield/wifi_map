@@ -26,29 +26,46 @@ class NetworkGraph {
             .alphaTarget(1)
             .on("tick", () => { this.ticked(); });
 
-        this.g = this.container.append("g").attr("transform", "translate(" + this.width / 2 + "," + this.height / 2 + ")"),
-        this.link = this.g.append("g").attr("stroke", "#000").attr("stroke-width", 1.5).selectAll(".link"),
-        this.node = this.g.append("g").attr("stroke", "#fff").attr("stroke-width", 1.5).selectAll(".node");
+        this.g = this.container
+            .append("g")
+            .attr("pointer-events", "all")
+            .attr(
+                "transform",
+                "translate(" + this.width / 2 + "," + this.height / 2 + ")"
+            );
 
-        this.restart();
+        this.link = this.g.append("g")
+            .attr("stroke", "#000")
+            .attr("stroke-width", 1.5)
+            .selectAll(".link");
+
+        this.node = this.g.append("g")
+            .attr("stroke", "#fff")
+            .attr("stroke-width", 1.5)
+            .selectAll(".node");
+
+        this.reset();
     }
 
-    restart() {
-      // Apply the general update pattern to the nodes.
+    reset() {
+        // Apply the general update pattern to the nodes.
         this.node = this.node.data(this.nodes, (d) => { return d.id;});
         this.node.exit().remove();
         this.node = this.node.enter()
-                        .append("circle")
-                        .attr("fill", (d) => { return this.color(d.id); })
-                        .attr("r", 8)
-                        .merge(this.node);
+            .append("circle")
+            .attr("fill", (d) => { return this.color(d.id); })
+            .attr("r", 8)
+            .merge(this.node);
 
-      // Apply the general update pattern to the links.
+        // Apply the general update pattern to the links.
         this.link = this.link.data(this.links, (d) => { return d.source.id + "-" + d.target.id; });
         this.link.exit().remove();
-        this.link = this.link.enter().append("line").merge(this.link);
+        this.link = this.link
+            .enter()
+            .append("line")
+            .merge(this.link);
 
-      // Update and restart the simulation.
+        // Update and restart the simulation.
         this.simulation.nodes(this.nodes);
         this.simulation.force("link").links(this.links);
         this.simulation.alpha(1).restart();
@@ -56,33 +73,63 @@ class NetworkGraph {
 
     ticked() {
         this.node.attr("cx", (d) => { return d.x; })
-                 .attr("cy", (d) => { return d.y; });
+            .attr("cy", (d) => { return d.y; });
 
         this.link.attr("x1", (d) => { return d.source.x; })
-                 .attr("y1", (d) => { return d.source.y; })
-                 .attr("x2", (d) => { return d.target.x; })
-                 .attr("y2", (d) => { return d.target.y; });
+            .attr("y1", (d) => { return d.source.y; })
+            .attr("x2", (d) => { return d.target.x; })
+            .attr("y2", (d) => { return d.target.y; });
+    }
+
+    findNodeIndex(id) {
+        for (let i = 0; i < this.nodes.length; i++) {
+            if (this.nodes[i].id == id) {
+                return i;
+            }
+        }
+    }
+
+    findLinkIndex(id) {
+        for (let i = 0; i < this.links.length; i++) {
+            if (this.links[i].id == id) {
+                return i;
+            }
+        }
     }
 
     addNode(newNode) {
         this.nodes.push(newNode);
-        this.restart();
+        this.reset();
     }
 
 
     addLink(newLink) {
         this.links.push(newLink);
-        this.restart();
+        this.reset();
     }
 
     removeNode(id) {
+        const nodeIndex = this.findNodeIndex(id);
+        const nodeId = this.nodes[nodeIndex].id;
 
-        this.restart();
+        // Need to remove any links attached to the node
+        let i = 0;
+        while (i < this.links.length) {
+            if ((this.links[i].source == nodeId) || (this.links[i].source == nodeId)) {
+                this.links.splice(i, 1);
+            }
+            else i++;
+        }
+
+        this.nodes.splice(nodeIndex, 1);
+
+        this.reset();
     }
 
     removeLink(id) {
-
-        this.restart();
+        const linkIndex = this.findLinkIndex(id);
+        this.links.splice(linkIndex, 1);
+        this.reset();
     }
 }
 
@@ -100,8 +147,8 @@ function handleUpdate(state, graph, update) {
             state.connection[sta.obj.conn_id] = sta.obj;
             graph.addLink({
                 // id: sta.obj.conn_id,
-                source: sta.obj.station1,
-                target: sta.obj.station2
+                source: state.station[sta.obj.station1],
+                target: state.station[sta.obj.station2]
             });
         }
     }
@@ -127,6 +174,7 @@ function handleUpdate(state, graph, update) {
         return response.json();
     }).then((update) => {
         handleUpdate(state, netGraph, update);
+        console.log("Intial state: ", state);
     }).catch(error => {
         console.error(error);
     });
