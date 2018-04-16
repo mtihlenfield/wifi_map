@@ -1,16 +1,36 @@
 <!doctype html>
 <html>
-	<head>
-		<title>Wifi Map</title>
-		<meta charset="utf-8">
+    <head>
+        <title>Wifi Map</title>
+        <meta charset="utf-8">
 
-		<link rel="stylesheet" href="/static/vendor/css/bootstrap.min.css">
-		<link rel="stylesheet" href="/static/main.css">
-	</head>
-	<body>
-		<svg id="graph-container"></svg>
-		<script src="/static/vendor/js/d3.v5.min.js"></script>
-		<script src="/static/vendor/js/d3-shape.v1.min.js"></script>
-		<script src="/static/main.js"></script>
-	</body>
+        <link rel="stylesheet" href="/static/vendor/css/bootstrap.min.css">
+        <link rel="stylesheet" href="/static/main.css">
+    </head>
+    <body>
+        <svg id="graph-container"></svg>
+        <div id="legend">
+            <h6 class="legend-header">Device Types:</h6>
+            <ul id="device-type">
+                <li>Access Point: 
+                    <svg id="dev-triangle" class="legend-svg">
+                        <polygon style="fill:grey;stroke:white;stroke-width:1" points="12,5 25,25 0,25"></polygon>
+                    </svg>
+                </li>
+                <li>Other: 
+                    <svg id="dev-square" class="legend-svg">
+                        <polygon style="fill:grey;stroke:white;stroke-width:1" points="4,4 4,25 20,25 20,4"></polygon>
+                    </svg>
+                </li>
+            </ul>
+            <h6 class="legend-header">Networks:</h6>
+            <ul id="networks">
+
+            </ul>
+
+        </div>
+        <script src="/static/vendor/js/d3.v5.min.js"></script>
+        <script src="/static/vendor/js/d3-shape.v1.min.js"></script>
+        <script src="/static/main.js"></script>
+    </body>
 </html>

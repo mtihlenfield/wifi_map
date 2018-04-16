@@ -62,6 +62,7 @@ class NetworkGraph {
     reset() {
         // Apply the general update pattern to the nodes. https://github.com/d3/d3-selection/blob/master/README.md#joining-data
         this.node = this.node.data(this.nodes, (d) => { return d.id;});
+        // TODO need to check shape on update too
         this.node.exit().remove();
         this.node = this.node.enter()
             .append("path")
@@ -230,22 +231,37 @@ function getSize(state, sta) {
 
 function handleUpdate(state, graph, update) {
     if (update.hasOwnProperty("station")) {
-        for (let sta of update["station"]) {
-            sta.obj.id = sta.obj.mac;
-            sta.obj.type = "station";
-            state.station[sta.obj.id] = sta.obj;
-            graph.addNode(sta.obj);
+        for (let change of update["station"]) {
+            if (change.action === "update") {
+                let curr_sta = state.station[change.obj.mac];
+                for (let key of change.updates) {
+                    curr_sta[key] = change.obj[key];
+                }
+            } else {
+                change.obj.id = change.obj.mac;
+                change.obj.type = "station";
+                state.station[change.obj.id] = change.obj;
+                graph.addNode(change.obj);
+            }
         }
     }
 
     if (update.hasOwnProperty("connection")) {
-        for (let conn of update["connection"]) {
-            conn.obj.id = conn.obj.conn_id;
-            conn.obj.type = "connection";
-            conn.obj.source = state.station[conn.obj.station1];
-            conn.obj.target = state.station[conn.obj.station2];
-            state.connection[conn.obj.id] = conn.obj;
-            graph.addLink(conn.obj);
+        for (let change of update["connection"]) {
+            if (change.action === "update") {
+                let curr_conn = state.station[change.obj.conn_id];
+                for (let key of change.updates) {
+                    curr_conn[key] = change.obj[key];
+                }
+
+            } else {
+                change.obj.id = change.obj.conn_id;
+                change.obj.type = "connection";
+                change.obj.source = state.station[change.obj.station1];
+                change.obj.target = state.station[change.obj.station2];
+                state.connection[change.obj.id] = change.obj;
+                graph.addLink(change.obj);
+            }
         }
     }
 }
