@@ -11,12 +11,13 @@ function getStyleProperty(id, property) {
 
 // Modified version of this https://bl.ocks.org/mbostock/1095795
 class NetworkGraph {
-    constructor(containerId, colorCb, shapeCb) {
+    constructor(containerId, colorCb, shapeCb, sizeCb) {
         this.container = d3.select(containerId);
         this.width = parseInt(getStyleProperty(containerId, "width"), 10);
         this.height = parseInt(getStyleProperty(containerId, "height"), 10);
         this.color = colorCb;
         this.shape = shapeCb;
+        this.size = sizeCb;
         this.nodes = [];
         this.links = [];
 
@@ -58,9 +59,12 @@ class NetworkGraph {
         this.node = this.node.data(this.nodes, (d) => { return d.id;});
         this.node.exit().remove();
         this.node = this.node.enter()
-            .append("circle")
+            .append("path")
                 .attr("fill", (d) => { return this.color(d); })
-                .attr("r", 20)
+                .attr("d", d3.symbol()
+                    .size((d) => { return this.size(d); } )
+                    .type((d) => { return this.shape(d); })
+                )
                 .attr("class", "node")
                 .call(d3.drag()
                     .on("start", (d) => { this.dragstarted(d); })
@@ -203,8 +207,20 @@ function getColor(state, obj) {
     return "#808080"; // grey
 }
 
-function getShape(state, obj) {
-    return "circle";
+function getShape(state, sta) {
+    if (sta.is_ap) {
+        return d3.symbolTriangle;
+    } else {
+        return d3.symbolSquare;
+    }
+}
+
+function getSize(state, sta) {
+    if (sta.is_ap) {
+        return 900;
+    } else {
+        return 500;
+    }
 }
 
 function handleUpdate(state, graph, update) {
@@ -242,7 +258,8 @@ function handleUpdate(state, graph, update) {
     const netGraph = new NetworkGraph(
         "#graph-container",
         (obj) => { return getColor(state, obj); },
-        (obj) => { return getShape(state, obj); }
+        (obj) => { return getShape(state, obj); },
+        (obj) => { return getSize(state, obj); }
     );
 
     const initRequest = new Request("/init", {
