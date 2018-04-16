@@ -21,7 +21,7 @@ class NetworkGraph {
         this.nodes = [];
         this.links = [];
 
-        this. simulation = d3.forceSimulation(this.nodes)
+        this.simulation = d3.forceSimulation(this.nodes)
             .force("charge", d3.forceManyBody().strength(-2000))
             .force("link", d3.forceLink(this.links).distance(200))
             .force("x", d3.forceX())
@@ -50,6 +50,11 @@ class NetworkGraph {
         this.label = this.g.append("g")
             .attr("font-size", 15)
             .selectAll(".label");
+
+        const zoom_handler = d3.zoom()
+            .on("zoom", () => this.g.attr("transform", d3.event.transform));
+
+        zoom_handler(this.container);
 
         this.reset();
     }
