@@ -136,20 +136,19 @@ class NetworkGraph {
 function handleUpdate(state, graph, update) {
     if (update.hasOwnProperty("station")) {
         for (let sta of update["station"]) {
-            state.station[sta.obj.mac] = sta.obj;
-            // graph.addNode({ id: sta.obj.mac, data: sta.obj });
-            graph.addNode({ id: sta.obj.mac });
+            sta.obj.id = sta.obj.mac;
+            state.station[sta.obj.id] = sta.obj;
+            graph.addNode(sta.obj);
         }
     }
 
     if (update.hasOwnProperty("connection")) {
-        for (let sta of update["connection"]) {
-            state.connection[sta.obj.conn_id] = sta.obj;
-            graph.addLink({
-                // id: sta.obj.conn_id,
-                source: state.station[sta.obj.station1],
-                target: state.station[sta.obj.station2]
-            });
+        for (let conn of update["connection"]) {
+            conn.obj.id = conn.obj.conn_id;
+            conn.obj.source = state.station[conn.obj.station1];
+            conn.obj.target = state.station[conn.obj.station2];
+            state.connection[conn.obj.id] = conn.obj;
+            graph.addLink(conn.obj);
         }
     }
 }
