@@ -44,7 +44,7 @@ def init():
     print("Got init request")
     stations = models.Station.select().execute()
     connections = models.Connection.select().execute()
-    networks = models.Network .select().execute()
+    networks = models.Network.select().execute()
 
     all_models = itertools.chain(stations, connections, networks)
     update = {}

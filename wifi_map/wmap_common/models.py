@@ -30,7 +30,11 @@ class Station(peewee.Model):
     class_name = "station"
     mac = peewee.TextField(primary_key=True)
     is_ap = peewee.BooleanField(default=False, unique=False)
-    ssid = peewee.ForeignKeyField(Network, null=True)
+    # removeing the foreign key constraint until I can figure out how to prevent
+    # peewee from auto filling in the ssid with the entire network object
+    # ssid = peewee.ForeignKeyField(Network, null=True)
+    ssid = peewee.TextField(null=True)
+    channel = peewee.IntegerField(null=True)
     manufacturer = peewee.TextField(null=True)
     last_update = peewee.DateTimeField(default=time.time())
 

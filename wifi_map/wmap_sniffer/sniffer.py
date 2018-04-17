@@ -16,7 +16,35 @@ def sniff(interface, config=DEFAULT_CONFIG):
     Listens for 802.11 packets on an interface and stores/queues
     revelant information.
     """
-    print("Sniffing")
+    packet_queue = multiprocessing.Queue()
+    update_queue = UpdateQueue.get_connection(config["mq_port"])
+    completion_event = multiprocessing.Event()
+    spawn_workers(packet_queue, update_queue, completion_event)
+
+    def callback(packet):
+        if packet.haslayer(dot11.Dot11):
+            # We don't need anything below the dot11 layer
+            dot11_layer = packet.getlayer(dot11.Dot11)
+            layer_bytes = sc.raw(dot11_layer)
+            time_recieved = time.time()
+
+            message = {
+                "pkt": layer_bytes,
+                "rcvd": time_recieved
+            }
+
+            packet_queue.put(message, block=False)
+
+    # TODO replace with raw socket listen. Scapy has too much overhead.
+    sniff_proc = multiprocessing.Process(
+        target=sc.sniff,
+        kwargs={
+            "iface": interface,
+            "prn": callback
+        }
+    )
+
+    sniff_proc.start()
 
 
 def read(fname, config=DEFAULT_CONFIG):

@@ -261,6 +261,26 @@ function onClick(state, obj) {
 }
 
 function handleUpdate(state, graph, update) {
+    // order is important here. stations and connections
+    // both reference networks
+
+    if (update.hasOwnProperty("network")) {
+        for (let change of update["network"]) {
+            if (change.action === "update") {
+                let curr_net = state.network[change.obj.ssid];
+                for (let key of change.updates) {
+                    curr_net[key] = change.obj[key];
+                }
+            } else {
+                change.obj.id = change.obj.ssid;
+                change.obj.type = "network";
+                state.network[change.obj.id] = change.obj;
+                // graph.addNode(change.obj);
+            }
+        }
+
+    }
+
     if (update.hasOwnProperty("station")) {
         for (let change of update["station"]) {
             if (change.action === "update") {
@@ -276,6 +296,7 @@ function handleUpdate(state, graph, update) {
             }
         }
     }
+
 
     if (update.hasOwnProperty("connection")) {
         for (let change of update["connection"]) {
@@ -330,9 +351,4 @@ function handleUpdate(state, graph, update) {
     }).catch(error => {
         console.error(error);
     });
-
-    setInterval(() => {
-        netGraph.removeNode
-    }, 5000);
-
 })();

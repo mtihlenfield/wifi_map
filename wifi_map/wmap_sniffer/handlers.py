@@ -245,14 +245,31 @@ def beacon_handler(pkt, time_recieved, locks):
             # everything else would take too much time to parse...
             elt = elt.payload.getlayer(dot11.Dot11Elt)
 
-        # check for device and make sure is_ap is set
+        # We should probably save some info...
+        if "ssid" in network_info and network_info["ssid"]:
+            with locks["network"]:
+                try:
+                    Network.get_by_id(network_info["ssid"])
+                    # nothing to do if network exists
+                except peewee.DoesNotExist:
+                    network = Network.create(
+                        ssid=network_info["ssid"],
+                        channel=network_info["channel"] if "channel" in network_info else None
+                    )
+                    network.save()
+                    state_changes.append(state.StateChange(
+                        state.ACTION_CREATE,
+                        Network,
+                        network
+                    ))
 
+        # check for device and make sure is_ap is set
         with locks["station"]:
             try:
                 sta = Station.get_by_id(dot11_layer.addr2)
                 if not sta.is_ap:
                     sta.is_ap = True
-                    sta.save()
+                    sta.save(force_insert=True)
 
                     state_changes.append(state.StateChange(
                         state.ACTION_UPDATE,
@@ -266,32 +283,12 @@ def beacon_handler(pkt, time_recieved, locks):
                     is_ap=True,
                     ssid=network_info["ssid"] if "ssid" in network_info else None
                 )
-                sta.save()
+                sta.save(force_insert=True)
 
                 state_changes.append(state.StateChange(
                     state.ACTION_CREATE,
                     Station,
                     sta
-                ))
-
-        # We should probably save some info...
-        if "ssid" not in network_info or not network_info["ssid"]:
-            return state_changes
-
-        with locks["network"]:
-            try:
-                Network.get_by_id(network_info["ssid"])
-                # nothing to do if network exists
-            except peewee.DoesNotExist:
-                network = Network.create(
-                    ssid=network_info["ssid"],
-                    channel=network_info["channel"] if "channel" in network_info else None
-                )
-                network.save()
-                state_changes.append(state.StateChange(
-                    state.ACTION_CREATE,
-                    Network,
-                    network
                 ))
 
     return state_changes
