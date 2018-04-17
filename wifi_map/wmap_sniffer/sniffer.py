@@ -79,7 +79,7 @@ def read(fname, config=DEFAULT_CONFIG):
 
                 packet_queue.put(message, block=False)
         print("Processing...")
-        completion_event.set()
+        # completion_event.set()
     except KeyboardInterrupt:
         print("Closing...")
         completion_event.set()
@@ -143,6 +143,7 @@ def process_packets(packet_queue, update_queue, locks, completion_event):
 
         except queue.Empty:
             if completion_event.is_set():
+                print("Queue empty. leaving")
                 return
             else:
                 time.sleep(1)

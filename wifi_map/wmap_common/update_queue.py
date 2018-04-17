@@ -1,11 +1,7 @@
-import json
 import multiprocessing
 
-import pika
-
-from . import constants
-
 # QUEUE_NAME = "wifi_map_update"
+
 
 class UpdateQueue():
 

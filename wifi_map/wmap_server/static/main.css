@@ -1,3 +1,8 @@
+body {
+    font-size: 0.7em;
+}
+
+
 #graph-container {
     position: absolute;
     width: 100%;
@@ -8,7 +13,7 @@
     position: absolute;
     top: 10px;
     left: 10px;
-    width: 300px;
+    width: 250px;
 }
 
 #legend {
@@ -28,6 +33,14 @@
     display: none;
 }
 
+#networks {
+    display: none;
+}
+
+.info {
+    background-color: white;
+}
+
 .info-list {
     list-style-type: none;
     padding-left: 10px;
@@ -38,9 +51,10 @@
 }
 
 .info-header {
-    margin: 5px 5px 15px 5px;
+    margin: 5px 5px 10px 5px;
     font-weight: bold;
     border-bottom: 1px solid black;
+    font-size: 1em;
 }
 
 .legend-svg {

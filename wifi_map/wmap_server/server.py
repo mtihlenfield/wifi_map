@@ -22,7 +22,7 @@ def start_server(config=constants.DEFAULT_CONFIG):
     try:
         socketio.run(app, port=config["portno"])
     except KeyboardInterrupt:
-        update_queue.close()
+        print("Shutting down...")
 
 
 def queue_listen(update_queue):

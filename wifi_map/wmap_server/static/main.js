@@ -11,8 +11,9 @@ function getStyleProperty(id, property) {
 
 // Modified version of this https://bl.ocks.org/mbostock/1095795
 class NetworkGraph {
-    constructor(containerId, colorCb, shapeCb, sizeCb, clickCb) {
+    constructor(containerId, networksId, colorCb, shapeCb, sizeCb, clickCb) {
         this.container = d3.select(containerId);
+        this.netContainer = d3.select(networksId);
         this.width = parseInt(getStyleProperty(containerId, "width"), 10);
         this.height = parseInt(getStyleProperty(containerId, "height"), 10);
         this.color = colorCb;
@@ -53,6 +54,10 @@ class NetworkGraph {
             .attr("font-size", 15)
             .selectAll(".label");
 
+        this.network = this.netContainer
+            .select("ul")
+            .selectAll("li");
+
         const zoom_handler = d3.zoom()
             .on("zoom", () => this.g.attr("transform", d3.event.transform));
 
@@ -63,15 +68,31 @@ class NetworkGraph {
 
     reset() {
         let self = this;
+
+        if (this.networks.length > 0) {
+            this.netContainer.style("display", "block");
+        }
+
+        this.network = this.network
+            .data(this.networks, (d) => { return d.ssid; });
+
+        this.node.exit().remove();
+
+        this.network = this.network
+            .enter()
+            .append("li")
+            .attr("color", (d) => { this.color(d); })
+            .text(d => d.ssid);
+
         // update number of node elements
         this.node = this.node.data(this.nodes, (d) => { return d.id;});
 
         // Make sure shapes are up to date
         this.node.selectAll("path")
-                .attr("d", d3.symbol()
-                    .size((d) => { return this.size(d); } )
-                    .type((d) => { return this.shape(d); })
-                );
+            .attr("d", d3.symbol()
+                .size((d) => { return this.size(d); } )
+                .type((d) => { return this.shape(d); })
+            );
 
         // remove any node elemnents that no longer have stations
         this.node.exit().remove();
@@ -79,18 +100,18 @@ class NetworkGraph {
         // create any new node elements
         this.node = this.node.enter()
             .append("path")
-                .attr("fill", (d) => { return this.color(d); })
-                .attr("d", d3.symbol()
-                    .size((d) => { return this.size(d); } )
-                    .type((d) => { return this.shape(d); })
-                )
-                .attr("class", "node")
-                .on("click", function(d) { self.click(d); })
-                .call(d3.drag()
-                    .on("start", (d) => { this.dragstarted(d); })
-                    .on("drag", (d) => { this.dragged(d); })
-                    .on("end", (d) => { this.dragended(d); })
-                )
+            .attr("fill", (d) => { return this.color(d); })
+            .attr("d", d3.symbol()
+                .size((d) => { return this.size(d); } )
+                .type((d) => { return this.shape(d); })
+            )
+            .attr("class", "node")
+            .on("click", function(d) { self.click(d); })
+            .call(d3.drag()
+                .on("start", (d) => { this.dragstarted(d); })
+                .on("drag", (d) => { this.dragged(d); })
+                .on("end", (d) => { this.dragended(d); })
+            )
             .merge(this.node);
 
         this.label = this.label.data(this.nodes, node => node.id);
@@ -153,6 +174,11 @@ class NetworkGraph {
 
     addLink(newLink) {
         this.links.push(newLink);
+        this.reset();
+    }
+
+    addNetwork(newNetwork) {
+        this.networks.push(newNetwork);
         this.reset();
     }
 
@@ -222,15 +248,19 @@ function getStationNetwork(state, sta) {
 
 function getColor(state, obj) {
     let netid = null;
-    if (obj.is_ap && obj.ssid) {
+    if (obj.type === "station") {
+        if (obj.is_ap && obj.ssid) {
+            netid = obj.ssid;
+        } else {
+            netid = getStationNetwork(state, obj);
+        }
+    } else if (obj.type === "network") {
         netid = obj.ssid;
-    } else {
-        netid = getStationNetwork(state, obj);
+        console.log("network color");
     }
 
     if (netid != null) {
         let color = state.color(netid);
-        console.log(color, netid);
         return color;
     }
 
@@ -292,7 +322,7 @@ function handleUpdate(state, graph, update) {
                 change.obj.id = change.obj.ssid;
                 change.obj.type = "network";
                 state.network[change.obj.id] = change.obj;
-                // graph.addNode(change.obj);
+                graph.addNetwork(change.obj);
             }
         }
 
@@ -344,11 +374,12 @@ function handleUpdate(state, graph, update) {
         station: {},
         connection: {},
         network: {},
-        color: d3.scaleOrdinal(d3.schemeCategory20)
+        color: d3.scaleOrdinal(d3.schemeCategory10)
     };
 
     const netGraph = new NetworkGraph(
         "#graph-container",
+        "#networks",
         (obj) => { return getColor(state, obj); },
         (obj) => { return getShape(state, obj); },
         (obj) => { return getSize(state, obj); },
