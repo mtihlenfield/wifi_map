@@ -26,6 +26,7 @@ class Station(peewee.Model):
     """
     A 802.11 capable device.
     """
+    # TODO there is alot more info to save here
     class_name = "station"
     mac = peewee.TextField(primary_key=True)
     is_ap = peewee.BooleanField(default=False, unique=False)

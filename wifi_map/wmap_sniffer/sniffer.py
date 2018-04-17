@@ -55,6 +55,11 @@ def read(fname, config=DEFAULT_CONFIG):
         print("Closing...")
         completion_event.set()
 
+    for worker in workers:
+        worker.join()
+
+    print("Completed queueing updates")
+
 
 def spawn_workers(packet_queue, update_queue, completion_event):
     """

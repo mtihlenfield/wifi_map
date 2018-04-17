@@ -1,5 +1,8 @@
 import copy
 
+import peewee
+import scapy.layers.dot11 as dot11
+
 from wmap_common import constants
 from wmap_common import state
 from wmap_common import db_utils
@@ -35,9 +38,8 @@ def get_mgmt_handler(subtype):
     """
     Retrieves a packet handler for the given management subtype
     """
-    if subtype == constants.FRAME_SUBTYPE_PROBE_RES:
-        return probe_res_handler
-    elif subtype == constants.FRAME_SUBTYPE_BEACON:
+    if subtype == constants.FRAME_SUBTYPE_PROBE_RES \
+            or subtype == constants.FRAME_SUBTYPE_BEACON:
         return beacon_handler
     elif subtype in [constants.FRAME_SUBTYPE_REASSOC_RES, constants.FRAME_SUBTYPE_REASSOC_REQ]:
         return reassoc_handler
@@ -88,7 +90,7 @@ def default_data_handler(pkt, time_recieved, locks):
     # clear out bad addresses
     addrs_copy = copy.copy(addresses)
     for addr_type, mac in addresses.items():
-        if mac in BAD_MACS:
+        if mac in BAD_MACS or mac is None:
             del addrs_copy[addr_type]
     addresses = addrs_copy
 
@@ -138,15 +140,17 @@ def default_data_handler(pkt, time_recieved, locks):
     poss_con_pairs = []
 
     # Determining what connections I should have:
-    if addresses[constants.ADDRESS_BSSID]:  # normal AP to client connection
-        for addr in [addresses[constants.ADDRESS_SRC], addresses[constants.ADDRESS_DST]]:
-            # connection.station1 and connection.station2 are sorted alphabetically
-            sorted_addrs = sorted((addr, addresses[constants.ADDRESS_BSSID]))
-            poss_con_pairs.append(sorted_addrs)
-    elif not addresses[constants.ADDRESS_BSSID] and not addresses[constants.ADDRESS_TRNSMT]:  # ad hoc connection
+    if constants.ADDRESS_BSSID in addresses:  # normal AP to client connection
+        for addr_type, addr in addresses.items():
+            if not addr_type == constants.ADDRESS_BSSID and addr != addresses[constants.ADDRESS_BSSID]:
+                # connection.station1 and connection.station2 are sorted alphabetically
+                sorted_addrs = sorted((addr, addresses[constants.ADDRESS_BSSID]))
+                poss_con_pairs.append(sorted_addrs)
+    elif constants.ADDRESS_BSSID not in addresses and constants.ADDRESS_TRNSMT not in addresses \
+            and constants.ADDRESS_DST in addresses and constants.ADDRESS_RCV in addresses:  # ad hoc connection
         sorted_addrs = sorted((addresses[constants.ADDRESS_DST], addresses[constants.ADDRESS_SRC]))
         poss_con_pairs.append(sorted_addrs)
-    elif addresses[constants.ADDRESS_TRNSMT]:  # WDS connection
+    elif constants.ADDRESS_TRNSMT in addresses:  # WDS connection
         # if one of the devices is an access point then create connections to it.
         # TODO implement this
         pass
@@ -211,26 +215,86 @@ def default_data_handler(pkt, time_recieved, locks):
     return state_changes
 
 
-def default_ctrl_handler(pkt, time_recieved, ldb_lock):
+def default_ctrl_handler(pkt, time_recieved, locks):
     """
     Default packet handler for control frames
     """
     return []
 
 
-def default_mgmt_handler(pkt, time_recieved, ldb_lock):
+def default_mgmt_handler(pkt, time_recieved, locks):
     """
     Default packet handler for management frames
     """
     return []
 
 
-def probe_res_handler(pkt, time_recieved, ldb_lock):
-    return []
+def beacon_handler(pkt, time_recieved, locks):
+    state_changes = []
+    if pkt.haslayer(dot11.Dot11Elt):
+        dot11_layer = pkt
+        elt = pkt.getlayer(dot11.Dot11Elt)
 
+        network_info = {}
+        while elt:
+            if elt.ID == 0 and elt.info.decode("utf-8") != "":
+                network_info["ssid"] = elt.info.decode("utf-8")
+            elif elt.ID == 4:
+                network_info["channel"] = elt.info
 
-def beacon_handler(pkt, time_recieved, ldb_lock):
-    return []
+            # everything else would take too much time to parse...
+            elt = elt.payload.getlayer(dot11.Dot11Elt)
+
+        # check for device and make sure is_ap is set
+
+        with locks["station"]:
+            try:
+                sta = Station.get_by_id(dot11_layer.addr2)
+                if not sta.is_ap:
+                    sta.is_ap = True
+                    sta.save()
+
+                    state_changes.append(state.StateChange(
+                        state.ACTION_UPDATE,
+                        Station,
+                        sta,
+                        updates=["is_ap"]
+                    ))
+            except peewee.DoesNotExist:
+                sta = Station(
+                    mac=dot11_layer.addr2,
+                    is_ap=True,
+                    ssid=network_info["ssid"] if "ssid" in network_info else None
+                )
+                sta.save()
+
+                state_changes.append(state.StateChange(
+                    state.ACTION_CREATE,
+                    Station,
+                    sta
+                ))
+
+        # We should probably save some info...
+        if "ssid" not in network_info or not network_info["ssid"]:
+            return state_changes
+
+        with locks["network"]:
+            try:
+                Network.get_by_id(network_info["ssid"])
+                # nothing to do if network exists
+            except peewee.DoesNotExist:
+                network = Network.create(
+                    ssid=network_info["ssid"],
+                    channel=network_info["channel"] if "channel" in network_info else None
+                )
+                network.save()
+                state_changes.append(state.StateChange(
+                    state.ACTION_CREATE,
+                    Network,
+                    network
+                ))
+
+    return state_changes
 
 
 def reassoc_handler(pkt, time_recieved, ldb_lock):
