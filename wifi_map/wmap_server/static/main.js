@@ -205,21 +205,33 @@ class NetworkGraph {
 function getStationNetwork(state, sta) {
     // In order to find the stations network we need to see if
     // it has any connections that have networks
+    let net = null;
     for (let conn of Object.values(state["connection"])) {
-        if (conn.source == sta.id || conn.target == sta.id) {
-            if (conn.ssid !== null) {
-                return state["network"][conn.ssid];
-            }
+        if (conn.source.id == sta.id && conn.target.ssid !== null) {
+            net = conn.target.ssid;
+            break;
+        }
+        if (conn.target.id == sta.id && conn.source.ssid !== null) {
+            net = conn.source.ssid;
+            break;
         }
     }
 
-    return null;
+    return net;
 }
 
 function getColor(state, obj) {
-    let network = getStationNetwork(state, obj);
-    if (network != null) {
-        return state.color(network.ssid);
+    let netid = null;
+    if (obj.is_ap && obj.ssid) {
+        netid = obj.ssid;
+    } else {
+        netid = getStationNetwork(state, obj);
+    }
+
+    if (netid != null) {
+        let color = state.color(netid);
+        console.log(color, netid);
+        return color;
     }
 
     return "#808080"; // grey
@@ -249,8 +261,13 @@ function onClick(state, obj) {
         d3.select("#sta-mac")
             .text(obj.mac);
 
-        d3.select("#sta-network")
-            .text(getStationNetwork(state, obj) || "unknown");
+        if (obj.is_ap && obj.ssid) {
+            d3.select("#sta-network")
+                .text(obj.ssid);
+        } else {
+            d3.select("#sta-network")
+                .text(getStationNetwork(state, obj) || "unknown");
+        }
 
         d3.select("#sta-man")
             .text(obj.manufacturer || "unknown");
