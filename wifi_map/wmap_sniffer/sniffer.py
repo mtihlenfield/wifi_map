@@ -44,6 +44,7 @@ def sniff(interface, config=DEFAULT_CONFIG):
         }
     )
 
+    print("Sniffing packets...")
     sniff_proc.start()
 
 

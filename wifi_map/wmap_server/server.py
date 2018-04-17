@@ -17,7 +17,7 @@ socketio = SocketIO(app)
 def start_server(config=constants.DEFAULT_CONFIG):
     update_queue = UpdateQueue.get_connection(config["mq_port"])
     socketio.start_background_task(queue_listen, update_queue)
-    print("Starting server...")
+    print("Client started on port {0}. Open 'http://localhost:{0}' in browser.".format(config["portno"]))
 
     try:
         socketio.run(app, port=config["portno"])
@@ -41,7 +41,7 @@ def init():
     """
     Retrieves the current map state and returns it as an update
     """
-    print("Got init request")
+    print("Got client request")
     stations = models.Station.select().execute()
     connections = models.Connection.select().execute()
     networks = models.Network.select().execute()
