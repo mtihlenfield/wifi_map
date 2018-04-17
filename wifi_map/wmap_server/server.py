@@ -15,7 +15,7 @@ socketio = SocketIO(app)
 
 
 def start_server(config=constants.DEFAULT_CONFIG):
-    update_queue = UpdateQueue.get_connection(config["mq_port"])
+    update_queue = UpdateQueue.get()
     socketio.start_background_task(queue_listen, update_queue)
     print("Client started on port {0}. Open 'http://localhost:{0}' in browser.".format(config["portno"]))
 

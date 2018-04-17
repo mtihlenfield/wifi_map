@@ -17,7 +17,7 @@ def sniff(interface, config=DEFAULT_CONFIG):
     revelant information.
     """
     packet_queue = multiprocessing.Queue()
-    update_queue = UpdateQueue.get_connection(config["mq_port"])
+    update_queue = UpdateQueue.get()
     completion_event = multiprocessing.Event()
     spawn_workers(packet_queue, update_queue, completion_event)
 
@@ -57,7 +57,7 @@ def read(fname, config=DEFAULT_CONFIG):
     # written to the queue per second. We're writing
     # wayyyyyyy faster than we're reading.
     packet_queue = multiprocessing.Queue()
-    update_queue = UpdateQueue.get_connection(config["mq_port"])
+    update_queue = UpdateQueue.get()
     completion_event = multiprocessing.Event()
     workers = spawn_workers(packet_queue, update_queue, completion_event)
 
