@@ -9,25 +9,40 @@
     </head>
     <body>
         <svg id="graph-container"></svg>
-        <div id="legend">
-            <h6 class="legend-header">Device Types:</h6>
-            <ul id="device-type">
-                <li>Access Point: 
-                    <svg id="dev-triangle" class="legend-svg">
-                        <polygon style="fill:grey;stroke:white;stroke-width:1" points="12,5 25,25 0,25"></polygon>
-                    </svg>
-                </li>
-                <li>Other: 
-                    <svg id="dev-square" class="legend-svg">
-                        <polygon style="fill:grey;stroke:white;stroke-width:1" points="4,4 4,25 20,25 20,4"></polygon>
-                    </svg>
-                </li>
-            </ul>
-            <h6 class="legend-header">Networks:</h6>
-            <ul id="networks">
+        <div id="info">
+            <div id="legend">
+                <h6 class="info-header">Device Types:</h6>
+                <ul id="device-type">
+                    <li>Access Point: 
+                        <svg id="dev-triangle" class="legend-svg">
+                            <polygon style="fill:grey;stroke:white;stroke-width:1" points="12,5 25,25 0,25"></polygon>
+                        </svg>
+                    </li>
+                    <li>Other: 
+                        <svg id="dev-square" class="legend-svg">
+                            <polygon style="fill:grey;stroke:white;stroke-width:1" points="4,4 4,25 20,25 20,4"></polygon>
+                        </svg>
+                    </li>
+                </ul>
+                <h6 class="info-header">Networks:</h6>
+                <ul id="networks">
 
-            </ul>
+                </ul>
 
+            </div>
+            <div id="sta-info">
+                <h6 class="info-header">Device Info</h6>
+                <ul class="info-list">
+                    <li><span class="info-label"> Mac Address: </span><span id="sta-mac"></span></li>
+                    <li><span class="info-label"> Network: </span><span id="sta-network"></span></li>
+                    <li><span class="info-label"> Manufacturer: </span><span id="sta-man"></span></li>
+                    <li><span class="info-label"> Access Point? </span><span id="sta-ap"></span></li>
+                </ul>
+
+            </div>
+            <div id="network-info">
+                <h6 class="info-header">Network Info</h6>
+            </div>
         </div>
         <script src="/static/vendor/js/d3.v5.min.js"></script>
         <script src="/static/vendor/js/d3-shape.v1.min.js"></script>

@@ -11,18 +11,20 @@ function getStyleProperty(id, property) {
 
 // Modified version of this https://bl.ocks.org/mbostock/1095795
 class NetworkGraph {
-    constructor(containerId, colorCb, shapeCb, sizeCb) {
+    constructor(containerId, colorCb, shapeCb, sizeCb, clickCb) {
         this.container = d3.select(containerId);
         this.width = parseInt(getStyleProperty(containerId, "width"), 10);
         this.height = parseInt(getStyleProperty(containerId, "height"), 10);
         this.color = colorCb;
         this.shape = shapeCb;
         this.size = sizeCb;
+        this.click = clickCb;
         this.nodes = [];
         this.links = [];
+        this.networks = [];
 
         this.simulation = d3.forceSimulation(this.nodes)
-            .force("charge", d3.forceManyBody().strength(-2000))
+            .force("charge", d3.forceManyBody().strength(-1500))
             .force("link", d3.forceLink(this.links).distance(200))
             .force("x", d3.forceX())
             .force("y", d3.forceY())
@@ -60,10 +62,21 @@ class NetworkGraph {
     }
 
     reset() {
-        // Apply the general update pattern to the nodes. https://github.com/d3/d3-selection/blob/master/README.md#joining-data
+        let self = this;
+        // update number of node elements
         this.node = this.node.data(this.nodes, (d) => { return d.id;});
-        // TODO need to check shape on update too
+
+        // Make sure shapes are up to date
+        this.node.selectAll("path")
+                .attr("d", d3.symbol()
+                    .size((d) => { return this.size(d); } )
+                    .type((d) => { return this.shape(d); })
+                );
+
+        // remove any node elemnents that no longer have stations
         this.node.exit().remove();
+
+        // create any new node elements
         this.node = this.node.enter()
             .append("path")
                 .attr("fill", (d) => { return this.color(d); })
@@ -72,6 +85,7 @@ class NetworkGraph {
                     .type((d) => { return this.shape(d); })
                 )
                 .attr("class", "node")
+                .on("click", function(d) { self.click(d); })
                 .call(d3.drag()
                     .on("start", (d) => { this.dragstarted(d); })
                     .on("drag", (d) => { this.dragged(d); })
@@ -102,8 +116,6 @@ class NetworkGraph {
     }
 
     ticked() {
-        // this.node.attr("cx", (d) => { return d.x; })
-        //    .attr("cy", (d) => { return d.y; });
         this.node.attr("transform", function(d) {
             return "translate(" + d.x + "," + d.y + ")";
         });
@@ -229,6 +241,25 @@ function getSize(state, sta) {
     }
 }
 
+function onClick(state, obj) {
+    if (obj.type == "station") {
+        let infoPanel = d3.select("#sta-info");
+        infoPanel.style("display", "block");
+
+        d3.select("#sta-mac")
+            .text(obj.mac);
+
+        d3.select("#sta-network")
+            .text(getStationNetwork(state, obj) || "unknown");
+
+        d3.select("#sta-man")
+            .text(obj.manufacturer || "unknown");
+
+        d3.select("#sta-ap")
+            .text(obj.is_ap ? "yes" : "no");
+    }
+}
+
 function handleUpdate(state, graph, update) {
     if (update.hasOwnProperty("station")) {
         for (let change of update["station"]) {
@@ -250,6 +281,8 @@ function handleUpdate(state, graph, update) {
         for (let change of update["connection"]) {
             if (change.action === "update") {
                 let curr_conn = state.station[change.obj.conn_id];
+
+                // TODO need to handle creation/deletion of connections for 'updates'
                 for (let key of change.updates) {
                     curr_conn[key] = change.obj[key];
                 }
@@ -280,7 +313,8 @@ function handleUpdate(state, graph, update) {
         "#graph-container",
         (obj) => { return getColor(state, obj); },
         (obj) => { return getShape(state, obj); },
-        (obj) => { return getSize(state, obj); }
+        (obj) => { return getSize(state, obj); },
+        (obj) => { onClick(state, obj); }
     );
 
     const initRequest = new Request("/init", {
@@ -296,5 +330,9 @@ function handleUpdate(state, graph, update) {
     }).catch(error => {
         console.error(error);
     });
+
+    setInterval(() => {
+        netGraph.removeNode
+    }, 5000);
 
 })();
