@@ -1,5 +1,7 @@
 # wifi_map: Map Nearby 802.11 Devices and Networks
 
+![screenshot wifi_map](screenshot.png)
+
 wifi_map sniffs nearby 802.11 traffic to build an interactive graph based visualization. It tries to show the nearby networks, access points, wlan devices and how they are all connected. It may also capture wired device traffic (like from managed switches) when the wired devices are communicating with wireless devices on a network.
 
 Traffic is visualized in a local web client (that you run in your browser) using d3.js and is updated live. If you don't have wireless card that can run in monitor mode wifi_map can also replay network situations from pcaps.
@@ -19,6 +21,7 @@ Note that this is just a prototype and it may be buggy. It currently doesn't han
 * pip3
     * Ubuntu: `sudo apt install python3-pip`
     * Arch Linux: `sudo pacman -Syu pip`
+* An up to date web browser.
 
 ### Installation
 1) Clone this repo
@@ -46,6 +49,8 @@ If you used virtualenv to install dependencies make sure you `cd` into the proje
 
     source .env/bin/activate
 
+Also if you ever run into issues where the browser client seems to have frozen just try refreshing the page.
+
 #### In sniff mode:
 
 To run in sniff mode you'll need to set up your wireless card in monitor mode using iw or airmon-ng. You'll see more traffic if you run wifi_map while running something like airodump-ng that will do automatic channel switching for you. Running with sudo is required in sniff mode because raw sockets can't be opened without root priveleges. Heres how you run it in sniff mode:
@@ -70,5 +75,8 @@ To run in sniff mode:
     ./wifi_map/wifi_map.py -r pcap_samples/eng-lib-01.cap
 
 Now open `http://localhost:6363`. It may take a minute for devices to start showing up depending on the pcap size.
+
+
+Once you've got wifi_map open in your browser you can use your mouse to pan, zoom, and move devices around to get a better view.
 
 
