@@ -11,27 +11,27 @@
         <svg id="graph-container"></svg>
         <div id="info">
             <div id="legend" class="info">
-		<div>
-			<h6 class="info-header">Device Types:</h6>
-			<ul id="device-type" class="info-list">
-			    <li>Access Point: 
-				<svg id="dev-triangle" class="legend-svg">
-				    <polygon style="fill:grey;stroke:white;stroke-width:1" points="12,5 25,25 0,25"></polygon>
-				</svg>
-			    </li>
-			    <li>Other: 
-				<svg id="dev-square" class="legend-svg">
-				    <polygon style="fill:grey;stroke:white;stroke-width:1" points="4,4 4,25 20,25 20,4"></polygon>
-				</svg>
-			    </li>
-			</ul>
-		</div>
-		<div id="networks" class="info">
-			<h6 class="info-header">Networks:</h6>
-			<ul id="networks-list" class="info-list">
+        <div>
+            <h6 class="info-header">Device Types:</h6>
+            <ul id="device-type" class="info-list">
+                <li>Access Point: 
+                <svg id="dev-triangle" class="legend-svg">
+                    <polygon style="fill:grey;stroke:white;stroke-width:1" points="12,5 25,25 0,25"></polygon>
+                </svg>
+                </li>
+                <li>Other: 
+                <svg id="dev-square" class="legend-svg">
+                    <polygon style="fill:grey;stroke:white;stroke-width:1" points="4,4 4,25 20,25 20,4"></polygon>
+                </svg>
+                </li>
+            </ul>
+        </div>
+        <div id="networks" class="info">
+            <h6 class="info-header">Networks:</h6>
+            <ul id="networks-list" class="info-list">
 
-			</ul>
-		</div>
+            </ul>
+        </div>
 
             </div>
             <div id="sta-info" class="info">
@@ -50,6 +50,7 @@
         </div>
         <script src="/static/vendor/js/d3.v5.min.js"></script>
         <script src="/static/vendor/js/d3-shape.v1.min.js"></script>
+        <script src="/static/vendor/js/socket.io.min.js"></script>
         <script src="/static/main.js"></script>
     </body>
 </html>

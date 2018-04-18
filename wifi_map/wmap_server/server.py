@@ -1,11 +1,11 @@
 import json
 import itertools
+import threading
 
 from flask import Flask, render_template, jsonify
 from flask_socketio import SocketIO
 
 from wmap_common import constants
-from wmap_common.update_queue import UpdateQueue
 from wmap_common import models
 from wmap_common import state
 
@@ -14,8 +14,7 @@ app.config['SECRET_KEY'] = 'secret!'
 socketio = SocketIO(app)
 
 
-def start_server(config=constants.DEFAULT_CONFIG):
-    update_queue = UpdateQueue.get()
+def start_server(update_queue, config=constants.DEFAULT_CONFIG):
     socketio.start_background_task(queue_listen, update_queue)
     print("Client started on port {0}. Open 'http://localhost:{0}' in browser.".format(config["portno"]))
 
@@ -26,9 +25,20 @@ def start_server(config=constants.DEFAULT_CONFIG):
 
 
 def queue_listen(update_queue):
-    def callback(update):
-        socketio.emit(json.dumps(update), broadcast=True)
-        update_queue.listen(callback)
+    def target(update_queue):
+        while True:
+            update = update_queue.get()
+            socketio.emit("update", json.dumps(update), broadcast=True)
+
+    # this is reallllly hacky
+    proc = threading.Thread(target=target, args=(update_queue,))
+    proc.start()
+
+
+@socketio.on("connect")
+def on_connect():
+    print("websocket client connected")
+    # socketio.emit("update", "test")
 
 
 @app.route("/")

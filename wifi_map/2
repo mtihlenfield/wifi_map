@@ -3,15 +3,11 @@ import multiprocessing
 import argparse
 import os
 
-import eventlet
-
 from wmap_sniffer import sniff, read
 from wmap_server import start_server
 import wmap_common.constants as constants
 import wmap_common.db_utils as db_utils
 import wmap_common.models as models
-
-eventlet.monkey_patch(socket=True)
 
 
 def filename(fname):

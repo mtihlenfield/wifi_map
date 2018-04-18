@@ -7,17 +7,15 @@ import scapy.all as sc
 import scapy.layers.dot11 as dot11
 
 from wmap_common.constants import DEFAULT_CONFIG
-from wmap_common.update_queue import UpdateQueue
 from . import handlers
 
 
-def sniff(interface, config=DEFAULT_CONFIG):
+def sniff(interface, update_queue, config=DEFAULT_CONFIG):
     """
     Listens for 802.11 packets on an interface and stores/queues
     revelant information.
     """
     packet_queue = multiprocessing.Queue()
-    update_queue = UpdateQueue.get()
     completion_event = multiprocessing.Event()
     spawn_workers(packet_queue, update_queue, completion_event)
 
@@ -48,7 +46,7 @@ def sniff(interface, config=DEFAULT_CONFIG):
     sniff_proc.start()
 
 
-def read(fname, config=DEFAULT_CONFIG):
+def read(fname, update_queue, config=DEFAULT_CONFIG):
     """
     Reads 802.11 packets from a pcap file and stores/queues
     relevant information.
@@ -57,7 +55,6 @@ def read(fname, config=DEFAULT_CONFIG):
     # written to the queue per second. We're writing
     # wayyyyyyy faster than we're reading.
     packet_queue = multiprocessing.Queue()
-    update_queue = UpdateQueue.get()
     completion_event = multiprocessing.Event()
     workers = spawn_workers(packet_queue, update_queue, completion_event)
 
@@ -108,7 +105,7 @@ def spawn_workers(packet_queue, update_queue, completion_event):
 
     for i in range(num_workers):
         proc = multiprocessing.Process(
-            target=process_packets, args=(packet_queue, update_queue, locks, completion_event)
+            target=process_packets, args=(packet_queue, locks, completion_event, update_queue)
         )
         proc.start()
         procs.append(proc)
@@ -116,7 +113,7 @@ def spawn_workers(packet_queue, update_queue, completion_event):
     return procs
 
 
-def process_packets(packet_queue, update_queue, locks, completion_event):
+def process_packets(packet_queue, locks, completion_event, update_queue):
     """
     Reads packets of the packet_queue, writes new info to the database,
     and places any updates on the update queue for the server to pull from
@@ -139,7 +136,7 @@ def process_packets(packet_queue, update_queue, locks, completion_event):
 
                     update[class_name].append(change.to_dict())
 
-                update_queue.put(update)
+                update_queue.put(update, block=False)
 
         except queue.Empty:
             if completion_event.is_set():

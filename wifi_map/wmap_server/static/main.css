@@ -37,6 +37,10 @@ body {
     display: none;
 }
 
+#networks li {
+    font-weight: bold
+}
+
 .info {
     background-color: white;
 }

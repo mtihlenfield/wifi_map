@@ -1,4 +1,5 @@
-var d3 = d3 || {}; // just to get rid of linter errors
+var d3 = d3 || {};
+var io = io || {};
 
 function getStyleProperty(id, property) {
     const element = document.querySelector(id);
@@ -76,13 +77,14 @@ class NetworkGraph {
         this.network = this.network
             .data(this.networks, (d) => { return d.ssid; });
 
-        this.node.exit().remove();
+        this.network.exit().remove();
 
         this.network = this.network
             .enter()
             .append("li")
-            .attr("color", (d) => { this.color(d); })
-            .text(d => d.ssid);
+            .style("color", (d) => { return this.color(d); })
+            .text(d => d.ssid)
+            .merge(this.network);
 
         // update number of node elements
         this.node = this.node.data(this.nodes, (d) => { return d.id;});
@@ -92,7 +94,7 @@ class NetworkGraph {
             .attr("d", d3.symbol()
                 .size((d) => { return this.size(d); } )
                 .type((d) => { return this.shape(d); })
-            );
+            ).attr("fill", (d) => { return this.color(d); });
 
         // remove any node elemnents that no longer have stations
         this.node.exit().remove();
@@ -235,10 +237,12 @@ function getStationNetwork(state, sta) {
     for (let conn of Object.values(state["connection"])) {
         if (conn.source.id == sta.id && conn.target.ssid !== null) {
             net = conn.target.ssid;
+            sta.ssid = net;
             break;
         }
         if (conn.target.id == sta.id && conn.source.ssid !== null) {
             net = conn.source.ssid;
+            sta.ssid = net;
             break;
         }
     }
@@ -248,15 +252,10 @@ function getStationNetwork(state, sta) {
 
 function getColor(state, obj) {
     let netid = null;
-    if (obj.type === "station") {
-        if (obj.is_ap && obj.ssid) {
-            netid = obj.ssid;
-        } else {
-            netid = getStationNetwork(state, obj);
-        }
-    } else if (obj.type === "network") {
+    if (obj.ssid) {
         netid = obj.ssid;
-        console.log("network color");
+    } else if (obj.type == "station") {
+        netid = getStationNetwork(state, obj);
     }
 
     if (netid != null) {
@@ -374,7 +373,7 @@ function handleUpdate(state, graph, update) {
         station: {},
         connection: {},
         network: {},
-        color: d3.scaleOrdinal(d3.schemeCategory10)
+        color: d3.scaleOrdinal(d3.schemePaired)
     };
 
     const netGraph = new NetworkGraph(
@@ -398,5 +397,11 @@ function handleUpdate(state, graph, update) {
         console.log("Intial state: ", state);
     }).catch(error => {
         console.error(error);
+    });
+
+    const socket = io.connect("http://" + document.domain + ":" + location.port);
+    // this is a callback that triggers when the "my response" event is emitted by the server.
+    socket.on("update", function(msg) {
+        console.log(msg);
     });
 })();
