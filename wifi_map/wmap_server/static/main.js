@@ -317,7 +317,7 @@ function handleUpdate(state, graph, update) {
                 for (let key of change.updates) {
                     curr_net[key] = change.obj[key];
                 }
-            } else {
+            } else if (!state.network[change.obj.ssid]) {
                 change.obj.id = change.obj.ssid;
                 change.obj.type = "network";
                 state.network[change.obj.id] = change.obj;
@@ -334,7 +334,7 @@ function handleUpdate(state, graph, update) {
                 for (let key of change.updates) {
                     curr_sta[key] = change.obj[key];
                 }
-            } else {
+            } else if (!state.station[change.obj.mac]) {
                 change.obj.id = change.obj.mac;
                 change.obj.type = "station";
                 state.station[change.obj.id] = change.obj;

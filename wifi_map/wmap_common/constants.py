@@ -45,3 +45,15 @@ ADDRESS_BSSID = "bssid"
 
 MAC_BROADCAST = "ff:ff:ff:ff:ff:ff"
 MAC_NONE = "00:00:00:00:00:00"
+
+UNSAFE_MACS = [
+    MAC_BROADCAST,
+    MAC_NONE
+]
+
+# starts of reserved mac addresses
+MAC_RES_START = [
+    "01:80:c2",
+    "33:33",
+    "01:00:5e"
+]

@@ -9,8 +9,6 @@ from wmap_common import db_utils
 from wmap_common.models import Station, Connection, Network
 from wmap_common.models import to_dict as model_to_dict
 
-BAD_MACS = [constants.MAC_BROADCAST, constants.MAC_NONE]
-
 
 def get_handler(frame_type, frame_subtype):
     """
@@ -90,7 +88,7 @@ def default_data_handler(pkt, time_recieved, locks):
     # clear out bad addresses
     addrs_copy = copy.copy(addresses)
     for addr_type, mac in addresses.items():
-        if mac in BAD_MACS or mac is None:
+        if not safe_mac(mac) or mac is None:
             del addrs_copy[addr_type]
     addresses = addrs_copy
 
@@ -249,8 +247,17 @@ def beacon_handler(pkt, time_recieved, locks):
         if "ssid" in network_info and network_info["ssid"]:
             with locks["network"]:
                 try:
-                    Network.get_by_id(network_info["ssid"])
-                    # nothing to do if network exists
+                    network = Network.get_by_id(network_info["ssid"])
+                    if network.ssid != network_info["ssid"]:
+                        network.ssid = network_info["ssid"]
+                        network.save()
+
+                        state_changes.append(state.StateChange(
+                            state.ACTION_CREATE,
+                            Network,
+                            network,
+                            upates=["ssid"]
+                        ))
                 except peewee.DoesNotExist:
                     network = Network.create(
                         ssid=network_info["ssid"],
@@ -264,6 +271,9 @@ def beacon_handler(pkt, time_recieved, locks):
                     ))
 
         # check for device and make sure is_ap is set
+        if not safe_mac(dot11_layer.addr2):
+            return state_changes
+
         with locks["station"]:
             try:
                 sta = Station.get_by_id(dot11_layer.addr2)
@@ -304,3 +314,10 @@ def auth_handler(pkt, time_recieved, ldb_lock):
 
 def disconnect_handler(pkt, time_recieved, ldb_lock):
     return []
+
+def safe_mac(mac):
+    for start in constants.MAC_RES_START:
+        if mac.lower().startswith(start):
+            return False
+
+    return mac not in constants.UNSAFE_MACS
