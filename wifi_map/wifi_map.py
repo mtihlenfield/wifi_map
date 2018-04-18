@@ -1,17 +1,15 @@
 #!/usr/bin/env python
-import multiprocessing
+# import threading
+import threading
+import queue
 import argparse
 import os
-
-import eventlet
 
 from wmap_sniffer import sniff, read
 from wmap_server import start_server
 import wmap_common.constants as constants
 import wmap_common.db_utils as db_utils
 import wmap_common.models as models
-
-eventlet.monkey_patch(socket=True)
 
 
 def filename(fname):
@@ -106,9 +104,9 @@ def main():
 
     db_init()
 
-    update_queue = multiprocessing.Queue()
+    update_queue = queue.Queue()
 
-    server_proc = multiprocessing.Process(target=start_server, args=(update_queue, config,))
+    server_proc = threading.Thread(target=start_server, args=(update_queue, config,))
     server_proc.start()
 
     if args.read:

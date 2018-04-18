@@ -401,7 +401,7 @@ function handleUpdate(state, graph, update) {
 
     const socket = io.connect("http://" + document.domain + ":" + location.port);
     // this is a callback that triggers when the "my response" event is emitted by the server.
-    socket.on("update", function(msg) {
-        console.log(msg);
+    socket.on("update", function(update) {
+        handleUpdate(state, netGraph, JSON.parse(update));
     });
 })();
