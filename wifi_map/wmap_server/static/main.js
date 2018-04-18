@@ -312,6 +312,11 @@ function handleUpdate(state, graph, update) {
 
     if (update.hasOwnProperty("network")) {
         for (let change of update["network"]) {
+            if (!change.obj.ssid) {
+                console.error("Got a bad network update", change.obj);
+                continue;
+            }
+
             if (change.action === "update") {
                 let curr_net = state.network[change.obj.ssid];
                 for (let key of change.updates) {
@@ -329,6 +334,11 @@ function handleUpdate(state, graph, update) {
 
     if (update.hasOwnProperty("station")) {
         for (let change of update["station"]) {
+            if (!change.obj.mac) {
+                console.error("Got a bad station update", change.obj);
+                continue;
+            }
+
             if (change.action === "update") {
                 let curr_sta = state.station[change.obj.mac];
                 for (let key of change.updates) {
@@ -336,6 +346,7 @@ function handleUpdate(state, graph, update) {
                 }
             } else if (!state.station[change.obj.mac]) {
                 change.obj.id = change.obj.mac;
+
                 change.obj.type = "station";
                 state.station[change.obj.id] = change.obj;
                 graph.addNode(change.obj);
@@ -346,6 +357,11 @@ function handleUpdate(state, graph, update) {
 
     if (update.hasOwnProperty("connection")) {
         for (let change of update["connection"]) {
+            if (!change.obj.station1 || !change.obj.station2) {
+                console.error("Got a bad connection object", change.obj);
+                continue;
+            }
+
             if (change.action === "update") {
                 let curr_conn = state.station[change.obj.conn_id];
 
