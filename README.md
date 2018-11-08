@@ -4,7 +4,7 @@
 
 wifi_map sniffs nearby 802.11 traffic to build an interactive graph based visualization. It tries to show the nearby networks, access points, wlan devices and how they are all connected.
 
-Traffic is visualized in a local web client (that you run in your browser) using d3.js and is updated live. If you don't have wireless card that can run in monitor mode wifi_map can also replay network situations from pcaps.
+Traffic is visualized in a local web client (that you run in your browser) using d3.js and is updated live. If you don't have a wireless card that can run in monitor mode wifi_map can also replay network situations from pcaps.
 
 Note that this is just a prototype and it may be buggy. It currently doesn't handle all 802.11 frames or network layouts and it doesn't gather nearly as much information as it could. I do plan to keep working on it and adding new features.
 
