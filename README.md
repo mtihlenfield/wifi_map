@@ -68,7 +68,7 @@ Now open `http://localhost:6363` in your browser and you should start to see dev
 
 If you don't have a wireless card that supports monitor mode you can still run wifi_map in pcap mode. In pcap mode wifi_map will read 802.11 traffic from a provided pcap file and build a visualization by "replaying" the traffic. There are a few pcap files in the pcap_samples directory that you can use to test it out.
 
-**Note: wifi_map uses scapy read through pcap files. scapy takes a decent amount of time to process the file before it starts providing packets. The larger the file the longer it takes. This just means that it might take a second before traffic starts showing up in the browser client. Just give it a minute and things should start popping up.**
+**Note: wifi_map uses scapy to read through pcap files. scapy takes a decent amount of time to process the file before it starts providing packets. The larger the file the longer it takes. This just means that it might take a second before traffic starts showing up in the browser client. Just give it a minute and things should start popping up.**
 
 To run in sniff mode:
 
