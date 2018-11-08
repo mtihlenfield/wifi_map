@@ -2,7 +2,7 @@
 
 ![screenshot wifi_map](screenshot.png)
 
-wifi_map sniffs nearby 802.11 traffic to build an interactive graph based visualization. It tries to show the nearby networks, access points, wlan devices and how they are all connected. It may also capture wired device traffic (like from managed switches) when the wired devices are communicating with wireless devices on a network.
+wifi_map sniffs nearby 802.11 traffic to build an interactive graph based visualization. It tries to show the nearby networks, access points, wlan devices and how they are all connected.
 
 Traffic is visualized in a local web client (that you run in your browser) using d3.js and is updated live. If you don't have wireless card that can run in monitor mode wifi_map can also replay network situations from pcaps.
 
